@@ -8,7 +8,7 @@ import subprocess
 import requests
 
 import config
-from utils import backslash_path, is_version_greater, check_for_bdai_updates
+from utils import backslash_path, is_version_greater, check_for_bdai_updates, configure_logging, request_with_retry
 
 logger = logging.getLogger(__name__)
 formatter = logging.Formatter("%(asctime)s %(message)s")
@@ -20,21 +20,7 @@ def get_log_file_path() -> str:
 
 
 def setup_logging():
-    logger.setLevel(logging.DEBUG)
-    logger.propagate = False
-
-    if not logger.handlers:
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.INFO)
-        console_handler.setFormatter(formatter)
-        logger.addHandler(console_handler)
-
-        file_handler = logging.FileHandler(filename=get_log_file_path())
-        file_handler.setLevel(logging.DEBUG)
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
-    else:
-        logger.info(logger.handlers)
+    configure_logging(silent="--startup" in sys.argv)
 
 
 def get_path_without_parent_dir(file_path: str) -> str:
@@ -43,10 +29,7 @@ def get_path_without_parent_dir(file_path: str) -> str:
 
 def download_file(url: str, save_path: str):
     try:
-        response = requests.get(url)
-        if response.status_code != 200:
-            logger.error(f"Failed to download file from {url}. HTTP status code: {response.status_code}")
-            sys.exit(1)
+        response = request_with_retry("GET", url)
 
         with open(save_path, "wb") as plugin_file:
             plugin_file.write(response.content)
@@ -96,6 +79,7 @@ def extract_zip(zip_instance: zipfile.ZipFile, target_directory: str, exclude_fi
 
 def run_bdai():
     logger.info("Running BDAI...")
+    startup_args = ["--startup"] if "--startup" in sys.argv else []
 
     if getattr(sys, "frozen", False):
         all_bdai_dirs = [i.lstrip("v") for i in os.listdir() if i.startswith("v") and "main.exe" in os.listdir(i)]
@@ -111,9 +95,9 @@ def run_bdai():
                 greatest_version = version
 
         os.chdir("v" + greatest_version)
-        execute_command = ["main.exe"]
+        execute_command = ["main.exe", *startup_args]
     else:
-        execute_command = [sys.executable, "main.py"]
+        execute_command = [sys.executable, "main.py", *startup_args]
     subprocess.run(execute_command)
 
 
@@ -166,7 +150,7 @@ def main():
             run_bdai()
             sys.exit(0)
 
-    release_url = requests.head(config.BDAI_LATEST_RELEASE_PAGE_URL, allow_redirects=True).url
+    release_url = request_with_retry("HEAD", config.BDAI_LATEST_RELEASE_PAGE_URL, allow_redirects=True).url
     latest_version = release_url.split("/")[-1]
     extract_directory = "./"
 

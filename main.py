@@ -11,15 +11,24 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="(%(asctime)s) %(message)s")
 
 
-def main():
-    config.load_settings()
+def run(silent_startup: bool = False):
     config.load_github_token()
 
     logger.info(f"BetterDiscordAutoInstaller v{config.BDAI_SCRIPT_VERSION}")
+    logger.info(
+        "Cached versions — Discord: %s | BetterDiscord: %s",
+        config.LAST_INSTALLED_DISCORD_VERSION or "unknown",
+        config.LAST_INSTALLED_BD_VERSION or "unknown"
+    )
 
     logger.info("Checking for BetterDiscordAutoInstaller updates...")
     if utils.check_for_bdai_updates() and not config.DISABLE_BDAI_AUTOUPDATE:
+        utils.show_notification(
+            "BetterDiscord Auto Installer",
+            "A new version was found. The update will be installed now."
+        )
         utils.run_updater()
+        return 0
 
     all_discord_paths = {
         config.DiscordEdition.STABLE: config.DISCORD_PARENT_PATH,
@@ -34,6 +43,8 @@ def main():
             break
     else:
         logger.error("No any valid Discord installation found.")
+        if silent_startup:
+            raise RuntimeError("Discord was not found. Run the updater manually and provide the Discord path.")
         logger.info("Enter the path to your Discord Stable installation")
 
         config.DISCORD_PARENT_PATH = input(">>> ").strip()
@@ -67,8 +78,8 @@ def main():
             time.sleep(1)
 
             logger.info(f"Waiting for end of {discord_edition} updating.")
-            while utils.is_discord_updating(discord_edition):
-                time.sleep(0.5)
+            if not utils.wait_for_discord_update(discord_edition):
+                raise RuntimeError(f"{discord_edition} update did not finish in time.")
 
         discord_core_folder = utils.get_latest_installed_discord_folder_name(discord_parent_path)
         discord_path = os.path.join(discord_parent_path, discord_core_folder)
@@ -85,7 +96,8 @@ def main():
             logger.info("")
             logger.info(f"Killing any running {discord_edition} processes...")
             utils.kill_discord(discord_edition)
-            time.sleep(2)
+            if not utils.wait_for_discord_exit(discord_edition):
+                raise RuntimeError(f"Could not close {discord_edition} before patching.")
 
             logger.info("")
 
@@ -103,6 +115,10 @@ def main():
             if not is_bd_injected_already:
                 logger.info(f"Verifying BetterDiscord {bd_release_tag} injection patch.")
                 utils.inject_patch(discord_path, config.USE_BD_CI_RELEASES)
+                utils.show_notification(
+                    "BetterDiscord updated",
+                    f"BetterDiscord {bd_release_tag} was re-injected into {discord_edition}."
+                )
 
             if bd_has_updates:
                 logger.info(f"BetterDiscord {bd_release_tag} has a new version, updating asar only.")
@@ -126,10 +142,71 @@ def main():
             logger.info(f"BetterDiscord {bd_release_tag} ({discord_edition}) is up to date and injected. No action needed.")
         logger.info("")
 
-    logger.info("Installation complete. Exiting in 3 seconds...")
-    time.sleep(3)
-    sys.exit(0)
+    ensure_discord_is_running(all_discord_paths)
+    ask_to_enable_autostart(silent_startup)
+    logger.info("Installation complete.")
+    if not silent_startup:
+        logger.info("Exiting in 3 seconds...")
+        time.sleep(3)
+    return 0
+
+
+def ask_to_enable_autostart(silent_startup: bool) -> None:
+    if silent_startup or config.STARTUP_PROMPTED:
+        return
+
+    config.STARTUP_PROMPTED = True
+    wants_autostart = utils.ask_yes_no(
+        "BetterDiscord Updater",
+        "Check and update BetterDiscord when Windows starts?\n\n"
+        "If you choose Yes, BetterDiscord Updater will start silently after you sign in."
+    )
+
+    if wants_autostart:
+        utils.enable_autostart()
+        utils.show_notification(
+            "BetterDiscord Updater",
+            "Automatic checks are enabled. You can disable them later in startup_manager."
+        )
+    else:
+        logger.info("Autostart was declined by the user.")
+
+    config.dump_settings()
+
+
+def ensure_discord_is_running(all_discord_paths: dict) -> None:
+    """Start the configured Discord edition after checks when it is still closed."""
+    edition_name = config.RERUN_DISCORD_EDITION or config.DiscordEdition.STABLE.to_str()
+    try:
+        edition = config.DiscordEdition.from_str(edition_name)
+    except ValueError:
+        logger.warning("Unknown Discord edition configured for restart: %s", edition_name)
+        return
+
+    discord_parent_path = all_discord_paths.get(edition)
+    if not discord_parent_path:
+        return
+
+    if utils.is_discord_running(edition):
+        logger.info("%s is already open.", edition)
+        return
+
+    logger.info("%s is closed. Starting it after update checks.", edition)
+    utils.start_discord(edition, discord_parent_path)
+
+
+def main():
+    silent_startup = "--startup" in sys.argv or "--silent" in sys.argv
+    config.load_settings()
+    utils.configure_logging(silent=silent_startup)
+
+    try:
+        return run(silent_startup)
+    except Exception as error:
+        logger.exception("BetterDiscordAutoInstaller failed.")
+        utils.show_notification("BetterDiscord Auto Installer error", str(error), error=True)
+        return 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

@@ -1,9 +1,30 @@
 import os
 import sys
 
-import winshell
-
 import config
+import utils
+
+
+def show_versions():
+    config.load_settings()
+    print("\nInstalled versions:")
+    editions = {
+        config.DiscordEdition.STABLE: config.DISCORD_PARENT_PATH,
+        config.DiscordEdition.CANARY: config.DISCORD_CANARY_PARENT_PATH,
+        config.DiscordEdition.PTB: config.DISCORD_PTB_PARENT_PATH
+    }
+
+    for edition, path in editions.items():
+        if not path:
+            continue
+        try:
+            version = utils.get_latest_installed_discord_folder_name(path)
+        except (FileNotFoundError, OSError):
+            version = "not found"
+        print(f"- {edition}: {version}")
+
+    betterdiscord_version = config.LAST_INSTALLED_BD_CI_VERSION if config.USE_BD_CI_RELEASES else config.LAST_INSTALLED_BD_VERSION
+    print(f"- BetterDiscord: {betterdiscord_version or 'not detected'}")
 
 
 def main():
@@ -17,26 +38,13 @@ def main():
 
     print(f"BetterDiscordAutoInstaller v{config.BDAI_SCRIPT_VERSION} (startup_manager)")
 
-    if getattr(sys, "frozen", False):
-        link_working_directory = os.path.dirname(sys.executable)
-        link_working_directory = os.path.split(link_working_directory)[0]  # a/b/c/ -> a/b/
-        link_target = os.path.join(link_working_directory, "updater.exe")
-        link_arguments = "--run"
-    else:
-        link_working_directory = os.path.dirname(__file__)
-        link_target = sys.executable
-        link_arguments = os.path.join(link_working_directory, "main.py")
-    link_path = os.path.join(
-        os.getenv("appdata"),
-        r"Microsoft\Windows\Start Menu\Programs\Startup\BetterDiscordAutoInstaller.lnk"
-    )
-
     while True:
         command = input(
             "\n"
             "[0] -- Exit\n"
-            "[1] -- Add to startup\n"
-            "[2] -- Remove from startup\n"
+            "[1] -- Enable checks when Windows starts\n"
+            "[2] -- Disable checks when Windows starts\n"
+            "[3] -- Show installed versions\n"
             "\n"
             "> "
         )
@@ -47,12 +55,8 @@ def main():
             break
         elif command == "1":
             try:
-                with winshell.shortcut(link_path) as link:
-                    link.path = link_target
-                    link.arguments = link_arguments
-                    link.working_directory = link_working_directory
-                    link.description = f"BetterDiscordAutoInstaller v{config.BDAI_SCRIPT_VERSION}"
-                print(".lnk file of the BetterDiscordAutoInstaller was added to startup.")
+                utils.enable_autostart()
+                print("Automatic BetterDiscord checks are enabled for Windows startup.")
 
             except PermissionError:
                 print("Permission denied. Please run the script with administrator privileges.")
@@ -60,13 +64,14 @@ def main():
                 print(f"An error occurred while adding the shortcut: {e}")
         elif command == "2":
             try:
-                if os.path.exists(link_path):
-                    os.remove(link_path)
-                    print("BetterDiscordAutoInstaller was removed from startup.")
+                if utils.disable_autostart():
+                    print("Automatic BetterDiscord checks were removed from Windows startup.")
                 else:
                     print("The shortcut does not exist in the startup folder.")
             except Exception as e:
                 print(f"An error occurred while removing the shortcut: {e}")
+        elif command == "3":
+            show_versions()
         else:
             print("Invalid option.")
 

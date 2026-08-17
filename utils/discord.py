@@ -1,6 +1,7 @@
 import os
 import logging
 import subprocess
+import time
 
 import psutil
 
@@ -40,8 +41,11 @@ def kill_discord(edition: config.DiscordEdition):
             try:
                 logger.info(f"Killing process: {process.info["name"]} (PID: {process.pid})")
                 process.kill()
+                process.wait(timeout=5)
             except psutil.NoSuchProcess:
                 pass
+            except psutil.TimeoutExpired:
+                logger.warning("Timed out while stopping %s (PID: %s).", process.info["name"], process.pid)
 
 
 def start_discord(edition: config.DiscordEdition, discord_parent_path: str):
@@ -83,3 +87,23 @@ def is_discord_updating(edition: config.DiscordEdition) -> bool:
     except FileNotFoundError as e:
         logger.error("Log file not found.", exc_info=e)
         return False
+
+
+def wait_for_discord_exit(edition: config.DiscordEdition) -> bool:
+    deadline = time.monotonic() + config.DISCORD_EXIT_TIMEOUT_SECONDS
+    while is_discord_running(edition):
+        if time.monotonic() >= deadline:
+            logger.error("Timed out waiting for %s to close.", edition)
+            return False
+        time.sleep(0.5)
+    return True
+
+
+def wait_for_discord_update(edition: config.DiscordEdition) -> bool:
+    deadline = time.monotonic() + config.DISCORD_UPDATE_TIMEOUT_SECONDS
+    while is_discord_updating(edition):
+        if time.monotonic() >= deadline:
+            logger.error("Timed out waiting for %s update to finish.", edition)
+            return False
+        time.sleep(0.5)
+    return True

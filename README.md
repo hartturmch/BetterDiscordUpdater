@@ -1,76 +1,51 @@
-<h1 align="center">
-    BetterDiscordAutoInstaller
-</h1>
+# BetterDiscord Updater
 
-<p align="center">
-    <img src="https://img.shields.io/badge/python-3.13-green?logo=python&logoColor=white&style=for-the-badge">
-    <img src="https://img.shields.io/badge/LICENSE-MIT-green?style=for-the-badge">
-    <img src="https://img.shields.io/github/languages/code-size/Zwylair/BetterDiscordAutoInstaller?style=for-the-badge">
-</p>
+Windows updater for [BetterDiscord](https://betterdiscord.app/) and Discord Stable, PTB, and Canary installations.
 
-## About
+This project is based on [Zwylair/BetterDiscordAutoInstaller](https://github.com/Zwylair/BetterDiscordAutoInstaller). The original project is licensed under MIT; this repository keeps its license and attribution.
 
-BetterDiscordAutoInstaller is a script that do the same work as official [BetterDiscord installer](https://betterdiscord.app/) on
-applying mod on Discord (PTB, Canary too). It automatically downloads `betterdiscord.asar` file from the
-official [BetterDiscord GitHub repo](https://github.com/BetterDiscord/BetterDiscord) and makes it load. If you have more than one discord
-(PTB or/and Canary) installed, BDAI will also patch them. But you need to specify paths to them in
-`settings.json`.
+## What it does
 
-### Supported OS
+- Checks the installed Discord and BetterDiscord versions.
+- Waits for Discord to finish its own update before applying a patch.
+- Downloads the current BetterDiscord release, with network retries.
+- Creates a timestamped `app.asar` backup before modifying it.
+- Keeps a small rotating log and only shows Windows notifications for errors or updates.
+- Starts Discord after the checks when it is closed, even when everything is already up to date.
+- Offers to run silently when Windows starts. The option creates a shortcut in the current user's Startup folder; it does not change the Windows registry.
+- Includes `startup_manager.exe` to enable or disable startup checks and view detected versions.
 
-Currently, BetterDiscordAutoInstaller is supported for **[Windows](https://github.com/Zwylair/BetterDiscordAutoInstaller/tree/master)** and **[macOS](https://github.com/Zwylair/BetterDiscordAutoInstaller/tree/macos)** OSes.
+## Requirements
 
-### BetterDiscord CI
+- Windows
+- A Discord Stable, PTB, or Canary installation
+- Internet access for update checks
 
-It is also possible to use [BetterDiscord CI Releases](https://github.com/BetterDiscord/BetterDiscord/actions/workflows/ci.yml).
-You need to get a [GitHub Access Token](https://github.com/settings/personal-access-tokens/new)
-with access to the public repos and change the `use_betterdiscord_ci_releases` option to `true` in
-the `settings.json` file. If you have not entered a token before, BDAI will show the prompt for you.
+## Run the packaged app
 
-### Autostart
+Run `updater.exe`. On its first normal run, it asks whether BetterDiscord should be checked when Windows starts.
 
-BDAI also allows you to add/remove it from autostart, without having to run it manually  every time.
-For macOS, the user can also choose to bind script to a keyboard shortcut to manually update.
+To manage that choice later, run `v1.5.0\\startup_manager.exe` and select an option from the menu.
 
-### Self update checks
+The updater is silent when started from Windows Startup. It creates `%APPDATA%\\BetterDiscordAutoInstaller\\logs\\updater.log` for diagnostics.
 
-BDAI will check if it is up to date. You can disable autoupdate by changing the `disable_bdai_autoupdate`
-setting to `true` in the `settings.json` file (but you will still  receive a message that a new version
-has been released).
+## Build from source
 
-## Setup and Dependencies
+```powershell
+python -m pip install -r requirements.txt
+python setup.py build
+```
 
-### Windows
-- Clone the repository: `git clone https://github.com/Zwylair/BetterDiscordAutoInstaller.git`
-- Install the dependencies: `python -m pip install -r requirements.txt`
-- Run the script: `python main.py`
+The build output is written to `build/exe.win-amd64-3.14/`.
 
-To add BetterDiscordAutoInstaller to your startup apps: `python startup_manager.py`
+## Settings
 
-### MacOS
-You need to go to [this](https://github.com/Zwylair/BetterDiscordAutoInstaller/tree/macos?tab=readme-ov-file#setup-and-dependencies) README.md
+`settings.json` is stored next to the packaged executable. It saves Discord paths, installed versions, retry limits, timeouts, and startup preference. Keep `disable_bdai_autoupdate` set to `true` for this customized build, otherwise the original self-updater can replace it.
 
-## Building
+## BetterDiscord CI releases
 
-### Windows
-- Clone the repository: `git clone https://github.com/Zwylair/BetterDiscordAutoInstaller.git`
-- Install the dependencies: `python -m pip install -r requirements.txt`
-- Run the build script: `python setup.py build`
-
-## Contributing
-I will be grateful for any contribution and help given to improve the quality of the project :)
-
-_(especially about adapting the project to other platforms like linux, etc. :3)_
-
-### macOS
-There is redundant/repetitive code which is seen both in manual-installer-mac.py and auto-installer-mac.py. 
-
-That can be fixed. Just need to make sure to have 2 separate files to allow for auto, manual install, and auto/manual-mixed functionalities. 
-
-### Fork
-Well, just fork it
-
-**But please, don't forget to mention original project in your README**
+The updater can optionally use BetterDiscord CI releases. Create a GitHub token with access to public repositories, place it in `github_token.txt`, and set `use_betterdiscord_ci_releases` to `true` in `settings.json`.
 
 ## License
-This project is under the [MIT license](./LICENSE).
+
+MIT. See [LICENSE](LICENSE).

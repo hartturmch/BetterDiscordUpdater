@@ -45,8 +45,11 @@ def get_artifacts_from_workflow(repo: str, author: str, run_id: str) -> Optional
     logger.info(f"Trying to get artifacts from {author} run (id: {run_id})...")
 
     try:
-        arts_resp = requests.get(f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/artifacts", headers=get_headers())
-        arts_resp.raise_for_status()
+        arts_resp = utils.request_with_retry(
+            "GET",
+            f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/artifacts",
+            headers=get_headers()
+        )
         return arts_resp.json()["artifacts"]
     except Exception as e:
         logger.error(str(e), exc_info=e)
@@ -63,8 +66,11 @@ def get_artifacts_from_successful_run(
     logger.info(f"Trying to get last {runs_limit} workflow runs from {workflow_author}...")
 
     try:
-        runs_resp = requests.get(workflows_url, headers=get_headers() | {"per_page": str(runs_limit)})
-        runs_resp.raise_for_status()
+        runs_resp = utils.request_with_retry(
+            "GET",
+            workflows_url,
+            headers=get_headers() | {"per_page": str(runs_limit)}
+        )
         workflow_runs = runs_resp.json()["workflow_runs"][:runs_limit]
 
         for run in workflow_runs:
@@ -98,14 +104,14 @@ def download_artifact(artifact: dict) -> bool:
 
         os.makedirs(os.path.dirname(config.BD_CI_ASAR_PATH), exist_ok=True)
 
-        zip_resp = requests.get(download_url, headers=get_headers())
-        zip_resp.raise_for_status()
+        zip_resp = utils.request_with_retry("GET", download_url, headers=get_headers())
 
         with zipfile.ZipFile(io.BytesIO(zip_resp.content)) as z:
             for name in z.namelist():
                 if not name.endswith(".asar"):
                     continue
 
+                utils.backup_asar(config.BD_CI_ASAR_PATH)
                 with open(config.BD_CI_ASAR_PATH, "wb") as f:
                     f.write(z.read(name))
                 break

@@ -29,6 +29,14 @@ def load_settings():
         config.USE_BD_CI_RELEASES = settings.get("use_betterdiscord_ci_releases", config.USE_BD_CI_RELEASES)
         config.WORKFLOW_RUNS_LIMIT = settings.get("workflow_runs_limit", config.WORKFLOW_RUNS_LIMIT)
         config.RERUN_DISCORD_EDITION = settings.get("rerun_discord_edition", config.RERUN_DISCORD_EDITION)
+        config.NETWORK_RETRY_ATTEMPTS = settings.get("network_retry_attempts", config.NETWORK_RETRY_ATTEMPTS)
+        config.NETWORK_RETRY_DELAY_SECONDS = settings.get("network_retry_delay_seconds", config.NETWORK_RETRY_DELAY_SECONDS)
+        config.NETWORK_TIMEOUT_SECONDS = settings.get("network_timeout_seconds", config.NETWORK_TIMEOUT_SECONDS)
+        config.LOG_MAX_BYTES = settings.get("log_max_bytes", config.LOG_MAX_BYTES)
+        config.LOG_BACKUP_COUNT = settings.get("log_backup_count", config.LOG_BACKUP_COUNT)
+        config.DISCORD_UPDATE_TIMEOUT_SECONDS = settings.get("discord_update_timeout_seconds", config.DISCORD_UPDATE_TIMEOUT_SECONDS)
+        config.DISCORD_EXIT_TIMEOUT_SECONDS = settings.get("discord_exit_timeout_seconds", config.DISCORD_EXIT_TIMEOUT_SECONDS)
+        config.STARTUP_PROMPTED = settings.get("startup_prompted", config.STARTUP_PROMPTED)
 
         # BD & Discord cached data
         config.DISABLE_DISCORD_VERSION_CHECKING = settings.get("disable_version_check", config.DISABLE_DISCORD_VERSION_CHECKING)
@@ -52,6 +60,14 @@ def dump_settings():
                 "use_betterdiscord_ci_releases": config.USE_BD_CI_RELEASES,
                 "workflow_runs_limit": config.WORKFLOW_RUNS_LIMIT,
                 "rerun_discord_edition": config.RERUN_DISCORD_EDITION,
+                "network_retry_attempts": config.NETWORK_RETRY_ATTEMPTS,
+                "network_retry_delay_seconds": config.NETWORK_RETRY_DELAY_SECONDS,
+                "network_timeout_seconds": config.NETWORK_TIMEOUT_SECONDS,
+                "log_max_bytes": config.LOG_MAX_BYTES,
+                "log_backup_count": config.LOG_BACKUP_COUNT,
+                "discord_update_timeout_seconds": config.DISCORD_UPDATE_TIMEOUT_SECONDS,
+                "discord_exit_timeout_seconds": config.DISCORD_EXIT_TIMEOUT_SECONDS,
+                "startup_prompted": config.STARTUP_PROMPTED,
 
                 # BD & Discord cached data
                 "disable_version_check": config.DISABLE_DISCORD_VERSION_CHECKING,

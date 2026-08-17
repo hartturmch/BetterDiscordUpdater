@@ -1,6 +1,8 @@
 import os
 import glob
 import logging
+import shutil
+from datetime import datetime
 
 import requests
 
@@ -55,13 +57,15 @@ def update_bd_asar_only(is_ci: bool):
 
     try:
         logger.info("Downloading BetterDiscord Stable asar...")
-        response = requests.get(config.BD_ASAR_URL)
+        response = utils.request_with_retry("GET", config.BD_ASAR_URL)
+        backup_asar(config.BD_ASAR_PATH)
         with open(config.BD_ASAR_PATH, "wb") as f:
             f.write(response.content)
         logger.info("BetterDiscord Stable asar downloaded successfully.")
 
-    except requests.exceptions.ConnectionError:
-        logger.error("Failed to download BetterDiscord Stable asar.")
+    except requests.RequestException as error:
+        logger.error("Failed to download BetterDiscord Stable asar: %s", error)
+        return
 
     config.LAST_INSTALLED_BD_VERSION = fetch_latest_bd_release()
     config.dump_settings()
@@ -102,14 +106,22 @@ def inject_patch(discord_path: str, is_ci: bool):
 
 def fetch_latest_bd_release() -> str:
     logger.info("Fetching latest BetterDiscord Stable version.")
-    latest_release_url = requests.head(config.BD_LATEST_RELEASE_PAGE_URL, allow_redirects=True)
-    return latest_release_url.url.split("/")[-1]
+    try:
+        latest_release_url = utils.request_with_retry("HEAD", config.BD_LATEST_RELEASE_PAGE_URL, allow_redirects=True)
+        return latest_release_url.url.split("/")[-1]
+    except requests.RequestException as error:
+        logger.error("Could not check BetterDiscord version: %s", error)
+        return config.LAST_INSTALLED_BD_VERSION
 
 
 def check_for_bd_updates(is_ci: bool) -> bool:
     """Checks for updates and return True if there is an available update, False otherwise"""
     logger.info("Checking for BetterDiscord updates...")
-    return check_for_bd_ci_updates() if is_ci else fetch_latest_bd_release() != config.LAST_INSTALLED_BD_VERSION
+    if is_ci:
+        return check_for_bd_ci_updates()
+
+    latest_version = fetch_latest_bd_release()
+    return latest_version is not None and latest_version != config.LAST_INSTALLED_BD_VERSION
 
 
 def check_for_bd_ci_updates() -> bool:
@@ -141,3 +153,26 @@ def update_bd_ci_asar() -> bool:
     config.LAST_INSTALLED_BD_CI_VERSION = release_meta.run_id
     config.dump_settings()
     return True
+
+
+def backup_asar(asar_path: str) -> None:
+    """Keep three timestamped BetterDiscord asar backups before replacing one."""
+    if not os.path.exists(asar_path):
+        return
+
+    os.makedirs(config.BACKUP_DIRECTORY, exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    backup_path = os.path.join(
+        config.BACKUP_DIRECTORY,
+        f"{os.path.basename(asar_path)}.{timestamp}.bak"
+    )
+    shutil.copy2(asar_path, backup_path)
+    logger.info("Backed up BetterDiscord asar to %s", backup_path)
+
+    backups = sorted(
+        glob.glob(os.path.join(config.BACKUP_DIRECTORY, f"{os.path.basename(asar_path)}.*.bak")),
+        key=os.path.getmtime,
+        reverse=True
+    )
+    for old_backup in backups[3:]:
+        os.remove(old_backup)

@@ -5,5 +5,9 @@ setup(
     name='BetterDiscordAutoInstaller',
     version=BDAI_SCRIPT_VERSION,
     description='',
-    executables=[Executable('main.py'), Executable('startup_manager.py')]
+    executables=[
+        Executable('main.py', base='gui'),
+        Executable('updater.py', base='gui'),
+        Executable('startup_manager.py')
+    ]
 )
