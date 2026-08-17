@@ -2,8 +2,6 @@
 
 Windows updater for [BetterDiscord](https://betterdiscord.app/) and Discord Stable, PTB, and Canary installations.
 
-This project is based on [Zwylair/BetterDiscordAutoInstaller](https://github.com/Zwylair/BetterDiscordAutoInstaller). The original project is licensed under MIT; this repository keeps its license and attribution.
-
 ## What it does
 
 - Checks the installed Discord and BetterDiscord versions.
