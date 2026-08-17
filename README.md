@@ -21,19 +21,6 @@ To manage that choice later, run `v1.5.0\\startup_manager.exe` and select an opt
 
 The updater is silent when started from Windows Startup. It creates `%APPDATA%\\BetterDiscordAutoInstaller\\logs\\updater.log` for diagnostics.
 
-## Build from source
-
-```powershell
-python -m pip install -r requirements.txt
-python setup.py build
-```
-
-The build output is written to `build/exe.win-amd64-3.14/`.
-
-## Settings
-
-`settings.json` is stored next to the packaged executable. It saves Discord paths, installed versions, retry limits, timeouts, and startup preference. Keep `disable_bdai_autoupdate` set to `true` for this customized build, otherwise the original self-updater can replace it.
-
 ## License
 
 MIT. See [LICENSE](LICENSE).
