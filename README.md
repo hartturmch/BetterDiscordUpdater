@@ -13,12 +13,6 @@ Windows updater for [BetterDiscord](https://betterdiscord.app/) and Discord Stab
 - Offers to run silently when Windows starts. The option creates a shortcut in the current user's Startup folder; it does not change the Windows registry.
 - Includes `startup_manager.exe` to enable or disable startup checks and view detected versions.
 
-## Requirements
-
-- Windows
-- A Discord Stable, PTB, or Canary installation
-- Internet access for update checks
-
 ## Run the packaged app
 
 Run `updater.exe`. On its first normal run, it asks whether BetterDiscord should be checked when Windows starts.
