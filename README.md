@@ -34,10 +34,6 @@ The build output is written to `build/exe.win-amd64-3.14/`.
 
 `settings.json` is stored next to the packaged executable. It saves Discord paths, installed versions, retry limits, timeouts, and startup preference. Keep `disable_bdai_autoupdate` set to `true` for this customized build, otherwise the original self-updater can replace it.
 
-## BetterDiscord CI releases
-
-The updater can optionally use BetterDiscord CI releases. Create a GitHub token with access to public repositories, place it in `github_token.txt`, and set `use_betterdiscord_ci_releases` to `true` in `settings.json`.
-
 ## License
 
 MIT. See [LICENSE](LICENSE).
