@@ -13,11 +13,13 @@ Windows updater for [BetterDiscord](https://betterdiscord.app/) and Discord Stab
 - Offers to run silently when Windows starts. The option creates a shortcut in the current user's Startup folder; it does not change the Windows registry.
 - Includes `startup_manager.exe` to enable or disable startup checks and view detected versions.
 
-## Run the packaged app
+## Install
 
-Run `updater.exe`. On its first normal run, it asks whether BetterDiscord should be checked when Windows starts.
+Download the latest `BetterDiscordUpdater-Setup-vX.Y.Z.exe` release and run it. The installer places the application in your local AppData folder and opens the updater after installation. Administrator permission is not required.
 
-To manage that choice later, run `v1.5.0\\startup_manager.exe` and select an option from the menu.
+On its first normal run, the updater asks whether BetterDiscord should be checked when Windows starts.
+
+To manage that choice later, run `startup_manager.exe` in the installed `v1.5.0` folder and select an option from the menu.
 
 The updater is silent when started from Windows Startup. It creates `%APPDATA%\\BetterDiscordAutoInstaller\\logs\\updater.log` for diagnostics.
 
